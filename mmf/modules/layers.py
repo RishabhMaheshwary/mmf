@@ -413,7 +413,6 @@ class TopDownAttentionLSTM(nn.Module):
 
     def forward(self, image_feat, embedding):
         image_feat_mean = image_feat.mean(1)
-
         # Get LSTM state
         state = registry.get(f"{image_feat.device}_lstm_state")
         h1, c1 = state["td_hidden"]

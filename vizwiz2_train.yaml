@@ -1,3 +1,21 @@
+model_config:
+  topdown_vqa: &topdown_vqa
+    model_data_dir: ${env.data_dir}
+    losses:
+    - type: logit_bce
+    text_embedding:
+      embedding_dim: 300
+    lstm:
+      input_size: 300
+      hidden_size: 512
+      bidirectional: false
+      batch_first: true
+    classifier:
+      type: mlp
+      params:
+        in_dim: 512
+        out_dim: 3
+
 dataset_config:
   vizwiz:
       data_dir: ${env.data_dir}/datasets
@@ -28,8 +46,7 @@ dataset_config:
           params:
             max_length: 14
             vocab:
-              type: intersected
-              embedding_name: glove.6B.300d
+              type: random
               vocab_file: vizwiz2/extras/vocabs/vocabulary_100k.txt
             preprocessor:
               type: simple_sentence
@@ -59,3 +76,27 @@ dataset_config:
       use_ocr: false
       # Return spatial information of OCR tokens if present
       use_ocr_info: false
+optimizer:
+  type: adam_w
+  params:
+    lr: 5e-5
+    eps: 1e-8
+
+scheduler:
+  type: warmup_linear
+  params:
+    num_warmup_steps: 6000
+    num_training_steps: 60000
+
+evaluation:
+  metrics:
+  - vqa_accuracy
+
+training:
+  batch_size: 1
+  lr_scheduler: true
+  # Don't forget to update schedule_attributes if you update this
+  max_updates: 60000
+  early_stop:
+    criteria: vizwiz/vqa_accuracy
+    minimize: false

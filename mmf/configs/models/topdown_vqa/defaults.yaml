@@ -1,0 +1,15 @@
+model_config:
+  topdown_vqa: &topdown_vqa
+    model_data_dir: ${env.data_dir}
+    losses:
+    - type: logit_bce
+    lstm:
+      input_size: 300
+      hidden_size: 512
+      bidirectional: true
+      batch_first: true
+    classifier:
+      type: mlp
+      params:
+        in_dim: 512
+        out_dim: 2

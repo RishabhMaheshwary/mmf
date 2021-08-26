@@ -52,6 +52,8 @@ class VizWizDataset(VQA2Dataset):
                     + str(image_id.item()).zfill(12)
                     + ".jpg",
                     "answer": answer,
+                    "original_label": report.targets.argmax(dim=1).tolist(),
+                    "predicted_label": report.scores.argmax(dim=1).tolist()
                 }
             )
 

@@ -77,11 +77,12 @@ class BiLSTMTextEmbedding(nn.Module):
         dropout,
         bidirectional=False,
         rnn_type="GRU",
+        model_data_dir = None
     ):
         super().__init__()
         self.text_out_dim = hidden_dim
         self.bidirectional = bidirectional
-
+        self.num_hid = hidden_dim
         if rnn_type == "LSTM":
             rnn_cls = nn.LSTM
         elif rnn_type == "GRU":
@@ -101,9 +102,9 @@ class BiLSTMTextEmbedding(nn.Module):
         # Return last state
         if self.bidirectional:
             return out[:, -1]
-
+        return out
         forward_ = out[:, -1, : self.num_hid]
-        backward = out[:, 0, self.num_hid :]
+        backward = out[:, 0, self.num_hid:]
         return torch.cat((forward_, backward), dim=1)
 
     def forward_all(self, x):

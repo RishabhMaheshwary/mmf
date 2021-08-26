@@ -29,7 +29,7 @@ class TrainerEvaluationLoopMixin(ABC):
         with torch.no_grad():
             self.model.eval()
             disable_tqdm = not use_tqdm or not is_master()
-            while reporter.next_dataset(flush_report=False):
+            while reporter.next_dataset(flush_report=True):
                 dataloader = reporter.get_dataloader()
                 combined_report = None
 
@@ -76,14 +76,13 @@ class TrainerEvaluationLoopMixin(ABC):
                         # Since `reporter.add_to_report` changes report keys,
                         # (e.g scores) do this after
                         # `combined_report.accumulate_tensor_fields_and_loss`
-                        if "__prediction_report__" in self.metrics.required_params:
+                        #if "__prediction_report__" in self.metrics.required_params:
                             # Still need to use original report here on GPU/TPU since
                             # it will be gathered
-                            reporter.add_to_report(report, self.model)
+                        reporter.add_to_report(report, self.model)
 
                         if single_batch is True:
                             break
-
                 logger.info(f"Finished training. Loaded {loaded_batches}")
                 logger.info(f" -- skipped {skipped_batches} batches.")
 

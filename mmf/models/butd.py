@@ -75,6 +75,7 @@ class BUTD(Pythia):
             )
             timesteps = self.text_processor.max_length
             sample_list.add_field("targets", sample_list.answers[:, 0, 1:])
+        breakpoint()
         return data, sample_list, timesteps
 
     def init_hidden_state(self, features):
