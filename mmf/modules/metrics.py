@@ -390,6 +390,98 @@ class VQAAccuracy(BaseMetric):
 
         return accuracy
 
+@registry.register_metric("vizwiz_baseline_ap")
+class VizWizBaselineAP(BaseMetric):
+
+    def __init__(self):
+        super().__init__("vizwiz_baseline_ap")
+
+    def calculate(self, sample_list, model_output, *args, **kwargs):
+
+        output = model_output["scores"]
+        out = output[:,1]
+        out = 1 - out
+        out = out.cpu().numpy()
+        ground_truths = sample_list["targets"][:,1]
+        ground_truths = 1 - ground_truths
+        ground_truths = ground_truths.cpu().numpy()
+
+        return average_precision_score(ground_truths, out)
+
+@registry.register_metric("vizwiz_baseline_f1")
+class VizWizBaselineF1(BaseMetric):
+
+    def __init__(self):
+        super().__init__("vizwiz_baseline_f1")
+
+    def calculate(self, sample_list, model_output, *args, **kwargs):
+        output = model_output["scores"]
+        out = output[:,1]
+        out = 1 - out
+        out = out > 0.5
+        out = out.long()
+        out = out.cpu().numpy()
+        ground_truths = sample_list["targets"][:,1]
+        ground_truths = 1 - ground_truths
+        ground_truths = ground_truths.cpu().numpy()
+
+        return f1_score(ground_truths, out)
+
+@registry.register_metric("vizwiz_baseline_rec_f1")
+class VizWizBaselineRecF1(BaseMetric):
+
+    def __init__(self):
+        super().__init__("vizwiz_baseline_rec_f1")
+
+    def calculate(self, sample_list, model_output, *args, **kwargs):
+        output = model_output["scores"]
+        out = output[:,2]
+        out = 1 - out
+        out = out > 0.5
+        out = out.long()
+        out = out.cpu().numpy()
+        unrec_mask = sample_list["targets"][:,1]
+        unrec_mask = unrec_mask < 0.5
+        unrec_mask = unrec_mask.long()
+        unrec_mask = unrec_mask.cpu().numpy()
+        ground_truths = sample_list["targets"][:,2]
+        ground_truths = 1 - ground_truths
+        ground_truths = ground_truths.cpu().numpy()
+        final_out, final_gts = [],[]
+        for i in range(len(unrec_mask)):
+            if int(unrec_mask[i]) == 1:
+                final_gts.append(ground_truths[i])
+                final_out.append(out[i])
+
+        return f1_score(final_gts, final_out)
+
+@registry.register_metric("vizwiz_baseline_rec_ap")
+class VizWizBaselineRecAP(BaseMetric):
+
+    def __init__(self):
+        super().__init__("vizwiz_baseline_rec_ap")
+
+    def calculate(self, sample_list, model_output, *args, **kwargs):
+        output = model_output["scores"]
+        out = output[:,2]
+        out = 1 - out
+        out = out.cpu().numpy()
+
+        unrec_mask = sample_list["targets"][:,1]
+        unrec_mask = unrec_mask < 0.5
+        unrec_mask = unrec_mask.long()
+        unrec_mask = unrec_mask.cpu().numpy()
+        ground_truths = sample_list["targets"][:,2]
+        ground_truths = 1 - ground_truths
+        ground_truths = ground_truths.cpu().numpy()
+
+        final_out, final_gts = [],[]
+        for i in range(len(unrec_mask)):
+            if int(unrec_mask[i]) == 1:
+                final_gts.append(ground_truths[i])
+                final_out.append(out[i])
+
+        return average_precision_score(final_gts, final_out)
 
 @registry.register_metric("vqa_evalai_accuracy")
 class VQAEvalAIAccuracy(BaseMetric):

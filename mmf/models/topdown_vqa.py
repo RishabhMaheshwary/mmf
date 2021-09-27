@@ -39,16 +39,20 @@ class TopDownVQA(BaseModel):
         num_answer_choices = registry.get(
             _TEMPLATES["number_of_answers"].format(self._datasets[0])
         )
+        print(num_answer_choices)
+        print(self._datasets)
         self.text_embedding = nn.Embedding(
             num_question_choices, self.config.text_embedding.embedding_dim
         )
 
-        self.lstm = nn.LSTM(**self.config.lstm)
+        self.lstm = nn.GRU(**self.config.lstm)
 
-        self.cnn = nn.Conv2d(in_channels=2560 ,out_channels=512, kernel_size=1)
+        self.cnn1 = nn.Conv2d(in_channels=2560 ,out_channels=512, kernel_size=1)
+        self.cnn2 = nn.Conv2d(in_channels=2560 ,out_channels=512, kernel_size=1)
         self.cnn_scores = nn.Conv2d(in_channels=512 ,out_channels=1, kernel_size=1)
         self.gated_tanh = GatedTanh(512, 512)
         self.gated_tanh_v = GatedTanh(2048, 512)
+        self.final_gated_tanh = GatedTanh(512, 1024)
         # As we generate output dim dynamically, we need to copy the config
         # to update it
         classifier_config = deepcopy(self.config.classifier)
@@ -65,32 +69,34 @@ class TopDownVQA(BaseModel):
 
     def forward(self, sample_list):
         self.lstm.flatten_parameters()
-
         question = sample_list.text
         image_feat = sample_list.image_feature_0
-        image_feat = torch.reshape(image_feat, (1, 2048, 10, 10))
-
+        batch_size = image_feat.shape[0]
+        image_feat = torch.reshape(image_feat, (batch_size, 2048, 10, 10))
+        #breakpoint()
         out, _ = self.lstm(self.text_embedding(question))
         out = out[:,-1,:]
-        out_reshaped = torch.reshape(out, (out.shape[1], 1, 1))
+        out_reshaped = torch.reshape(out, (batch_size, out.shape[1], 1, 1))
         q_embs = torch.tile(out_reshaped, (1, 1, image_feat.shape[2], image_feat.shape[3]))
 
-        qv_embs1 = torch.nn.Sigmoid()(self.cnn(torch.cat([image_feat, q_embs], dim=1)))
-        qv_embs2 = torch.nn.Tanh()(self.cnn(torch.cat([image_feat, q_embs], dim=1)))
+        qv_embs1 = torch.sigmoid(self.cnn1(torch.cat([image_feat, q_embs], dim=1)))
+        qv_embs2 = torch.tanh(self.cnn2(torch.cat([image_feat, q_embs], dim=1)))
 
         qv_embs = qv_embs1 * qv_embs2
         attn_scores = self.cnn_scores(qv_embs)
-        softmax = torch.nn.Softmax(dim=1)
-        attn_scores = softmax(attn_scores)
+        softmax = torch.nn.Softmax(dim=0)
 
+        attn_scores = softmax(attn_scores)
+        attn_scores = torch.reshape(attn_scores, (batch_size, 10, 10, 1))
+        image_feat = torch.reshape(image_feat, (batch_size, 10, 10, 2048))
         attn_feat = attn_scores * image_feat
-        attn_feat = torch.mean(attn_feat, dim=(2,3))
+        #breakpoint()
+        attn_feat = torch.mean(attn_feat, dim=(1,2))
 
         v_final = self.gated_tanh_v(attn_feat)
         q_final = self.gated_tanh(out)
 
         qv_combine = q_final * v_final
 
-        scores = self.classifier(qv_combine)
-
+        scores = torch.sigmoid(self.classifier(self.final_gated_tanh(qv_combine)))
         return {"scores": scores}

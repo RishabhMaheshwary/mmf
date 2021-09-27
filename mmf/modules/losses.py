@@ -232,6 +232,35 @@ class LogitBinaryCrossEntropy(nn.Module):
 
         return loss * targets.size(1)
 
+@registry.register_loss("vizwiz_baseline_loss")
+class VizWizBaselineLoss(nn.Module):
+    """Returns Binary Cross Entropy for logits.
+
+    Attention:
+        `Key`: logit_bce
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, sample_list, model_output):
+        """Calculates and returns the binary cross entropy for logits
+
+        Args:
+            sample_list (SampleList): SampleList containing `targets` attribute.
+            model_output (Dict): Model output containing `scores` attribute.
+
+        Returns:
+            torch.FloatTensor: Float value for loss.
+
+        """
+        scores = model_output["scores"]
+        targets = sample_list["targets"]
+        weights = torch.tensor([0.0, 0.5, 0.5], device=targets.device)
+
+        loss = F.binary_cross_entropy_with_logits(scores, targets, reduction="mean", pos_weight=weights)
+
+        return loss
 
 @registry.register_loss("triple_logit_bce")
 class TripleLogitBinaryCrossEntropy(nn.Module):
