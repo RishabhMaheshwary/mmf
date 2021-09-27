@@ -74,8 +74,8 @@ class TopDownVQA(BaseModel):
         batch_size = image_feat.shape[0]
         image_feat = torch.reshape(image_feat, (batch_size, 2048, 10, 10))
         #breakpoint()
-        out, _ = self.lstm(self.text_embedding(question))
-        out = out[:,-1,:]
+        out, hidden = self.lstm(self.text_embedding(question))
+        out = hidden[-1,:,:]
         out_reshaped = torch.reshape(out, (batch_size, out.shape[1], 1, 1))
         q_embs = torch.tile(out_reshaped, (1, 1, image_feat.shape[2], image_feat.shape[3]))
 
