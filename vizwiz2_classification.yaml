@@ -2,7 +2,7 @@ model_config:
   topdown_vqa: &topdown_vqa
     model_data_dir: ${env.data_dir}
     losses:
-    - type: logit_bce
+    - type: vizwiz_baseline_loss
     text_embedding:
       embedding_dim: 300
     lstm:
@@ -35,11 +35,11 @@ dataset_config:
           - vizwiz2/val_features
       annotations:
           train:
-          - vizwiz2/annotations/imdb_vizwiz_train.npy
+          - vizwiz2/annotations_classification/imdb_vizwiz_train.npy
           val:
-          - vizwiz2/annotations/imdb_vizwiz_val.npy
+          - vizwiz2/annotations_classification/imdb_vizwiz_val.npy
           test:
-          - vizwiz2/annotations/imdb_vizwiz_val.npy
+          - vizwiz2/annotations_classification/imdb_vizwiz_val.npy
       max_features: 100
       processors:
         text_processor:
@@ -55,7 +55,7 @@ dataset_config:
         answer_processor:
           type: vqa_answer
           params:
-            vocab_file: vizwiz2/extras/vocabs/answers_vizwiz_7k.txt
+            vocab_file: vizwiz2/extras/vocabs/answers_vizwiz_classification.txt
             preprocessor:
               type: simple_word
               params: {}
@@ -70,11 +70,15 @@ dataset_config:
 optimizer:
   type: adam_w
   params:
-    lr: 0.00001
+    lr: 0.001
 
 evaluation:
   metrics:
   - vqa_accuracy
+  - vizwiz_baseline_ap
+  - vizwiz_baseline_f1
+  - vizwiz_baseline_rec_f1
+  - vizwiz_baseline_rec_ap
 
 training:
   batch_size: 64

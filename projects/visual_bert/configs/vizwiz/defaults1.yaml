@@ -3,7 +3,7 @@ model_config:
     hidden_size: 768
     hidden_dropout_prob: 0.1
     training_head_type: classification
-    num_labels: 7371
+    num_labels: 3
     pooler_strategy: vqa
     losses:
     - type: logit_bce
@@ -41,9 +41,13 @@ scheduler:
 evaluation:
   metrics:
   - vqa_accuracy
+  - vizwiz_baseline_ap
+  - vizwiz_baseline_f1
+  - vizwiz_baseline_rec_f1
+  - vizwiz_baseline_rec_ap
 
 training:
-  batch_size: 20
+  batch_size: 10
   lr_scheduler: true
   # Don't forget to update schedule_attributes if you update this
   max_updates: 60000
